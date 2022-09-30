@@ -30,6 +30,21 @@ loader_start:
         la	a0, switch_line
 	call	uart_output
 
+	# disable interrupt as soon as possible
+	# enable interrupts before disable them to ensure the behavior is effective
+	li	t3, 0xA
+	csrs	mstatus, t3
+
+	# disable all interrupts
+	li	t3, 0xF
+	csrc	mstatus, t3
+
+	# show messages
+	la	a0, disble_interrupt_by_loader_message
+	call	uart_output
+	la	a0, switch_line
+	call	uart_output
+
 	jal	halt
 
 
@@ -57,8 +72,10 @@ halt:   jal	zero, halt			# enter the infinite loop
 
 .section .rodata
 boot_message:
-	.string "boot"
+	.string "boot ..."
 loader_message:
-	.string "Start Loader"
+	.string "Start Loader ..."
 switch_line:
 	.string "\n"
+disble_interrupt_by_loader_message:
+	.string "Interrupts disabled ..."
