@@ -7,6 +7,7 @@
 .globl _start
 
 
+# ===========================            boot                  ===========================
 _start:
 # =========================== halt all other hart except hart0 ===========================
         csrr	t0, mhartid			# read hardware thread id (`hart` stands for `hardware thread`)
@@ -16,12 +17,29 @@ _start:
         la	sp, stack_top			# setup stack pointer
 
 # ===========================     output message of 'boot'     ===========================
-        la	a0, msg				# load address of `msg` to a0 argument register
+        la	a0, boot_message
+	call	uart_output
+        la	a0, switch_line
+	call	uart_output
 
+
+# ===========================            loader                ===========================
+loader_start:
+        la	a0, loader_message
+	call	uart_output
+        la	a0, switch_line
+	call	uart_output
+
+	jal	halt
+
+
+# ===========================          uart output             ===========================
+uart_output:
         li	t0, UART_BASE			# t0 = UART_BASE
+
 1:
 	lbu	t1, (a0)			# t1 = load unsigned byte from memory address specified by a0 register
-	beqz	t1, halt
+	beqz	t1, uart_return
 						# wait until UART is ready
 2:
 	lw	t2, UART_REG_TXFIFO(t0)		# t2 = uart[UART_REG_TXFIFO]
@@ -29,10 +47,18 @@ _start:
         sw	t1, UART_REG_TXFIFO(t0)		# send byte, uart[UART_REG_TXFIFO] = t1
 
         addi  	a0, a0, 1			# increment a0 address by 1 byte
-        jal     x0, 1b
+        jal     zero, 1b
+uart_return:
+	ret
 
-halt:   jal	x0, halt			# enter the infinite loop
+
+# ===========================             panic                ===========================
+halt:   jal	zero, halt			# enter the infinite loop
 
 .section .rodata
-msg:
-     .string "boot"
+boot_message:
+	.string "boot"
+loader_message:
+	.string "Start Loader"
+switch_line:
+	.string "\n"
