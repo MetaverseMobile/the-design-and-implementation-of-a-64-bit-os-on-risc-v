@@ -45,7 +45,19 @@ loader_start:
 	la	a0, switch_line
 	call	uart_output
 
-	jal	halt
+	# enable protect mode, switch to supervisor mode first
+	li	t0, 0x1800
+	csrc	mstatus, t0
+	li	t0, 2048
+	csrs	mstatus, t0
+	la	t0, paging_management
+	csrw	mepc, t0
+	mret
+
+
+# ===========================       paging management          ===========================
+paging_management:
+        jal     halt
 
 
 # ===========================          uart output             ===========================
